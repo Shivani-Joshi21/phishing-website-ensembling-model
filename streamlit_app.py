@@ -1,11 +1,9 @@
-import streamlit as st
+
+  import streamlit as st
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier, ExtraTreesClassifier, VotingClassifier
-from sklearn.metrics import accuracy_score
 from sklearn.feature_extraction.text import TfidfVectorizer
-from urllib.parse import urlparse
 import tldextract
 
 # Load the phishing website dataset (replace this with your dataset)
@@ -16,7 +14,10 @@ def preprocess_url(url):
     extracted = tldextract.extract(url)
     return extracted.domain + '.' + extracted.suffix
 
-data['url'] = data['url'].apply(preprocess_url)
+try:
+    data['url'] = data['url'].apply(preprocess_url)
+except Exception as e:
+    st.error(f"Error preprocessing URLs: {e}")
 
 # Feature extraction
 tfidf = TfidfVectorizer(max_features=500)
