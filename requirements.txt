@@ -3,7 +3,7 @@ pandas
 matplotlib
 seaborn
 streamlit
-sklearn
+scikit-learn
 xgboost
 pickle
 tensorflow
