@@ -1,57 +1,52 @@
 import streamlit as st
-import pickle
 import pandas as pd
-from extract_features import ExtractFeatures
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier, ExtraTreesClassifier, VotingClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.feature_extraction.text import TfidfVectorizer
+from urllib.parse import urlparse
+import tldextract
 
-@st.cache_resource
-def get_model():
-    """
-    Loads the phishing URL detection model from a pickle file.
-    This function reads and loads a pickled file containing the classifier.
-    Returns:
-        object: The loaded phishing URL detection model.
-    Note:
-        The model should be saved in a file named 'phishing_url_detector.pkl'.
-        XGBoost module must be installed before using the file.
-    """
-    with open('phishing_url_detector.pkl', 'rb') as pickle_model:
-        phishing_url_detector = pickle.load(pickle_model)
-    return phishing_url_detector
+# Load the phishing website dataset (replace this with your dataset)
+data = pd.read_csv('phishing_dataset.csv')
 
-st.title("Phishing Website Detector")
-st.header("Are you sure you want to paste that link?")
+# Preprocessing
+def preprocess_url(url):
+    extracted = tldextract.extract(url)
+    return extracted.domain + '.' + extracted.suffix
 
-# Takes in user input
-input_url = st.text_area("Put in your site link here: ")
+data['url'] = data['url'].apply(preprocess_url)
 
-if input_url != "":
-    
-    # Extracts features from the URL and converts it into a dataframe
-    features_url = ExtractFeatures().url_to_features(url=input_url)
-    features_dataframe = pd.DataFrame.from_dict([features_url])
-    features_dataframe = features_dataframe.fillna(-1)
-    features_dataframe = features_dataframe.astype(int)
+# Feature extraction
+tfidf = TfidfVectorizer(max_features=500)
+X = tfidf.fit_transform(data['url']).toarray()
+y = data['label']
 
-    st.write("okay")
-    st.cache_data.clear()
-    prediction_str = ""
+# Model building
+models = [
+    ('rf', RandomForestClassifier(n_estimators=100)),
+    ('ada', AdaBoostClassifier(n_estimators=100)),
+    ('gb', GradientBoostingClassifier(n_estimators=100)),
+    ('et', ExtraTreesClassifier(n_estimators=100))
+]
 
-    # Predict outcome using extracted features
-    try: 
-        phishing_url_detector = get_model()
-        prediction = phishing_url_detector.predict(features_dataframe)
-        if prediction == int(True):
-            prediction_str = 'Phishing Website. Do not click!'
-        elif prediction == int(False):
-            prediction_str = 'Not Phishing Website, stay safe!'
-        else:
-            prediction_str = ''
-        st.write(prediction_str)
-        st.write(features_dataframe)
+ensemble = VotingClassifier(models, voting='soft')
 
-    except Exception as e:
-        print(e)
-        st.error("Not sure, what went wrong. We'll get back to you shortly!")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-else:
-    st.write("")
+ensemble.fit(X_train, y_train)
+
+# Streamlit app
+st.title('Phishing Website Detector')
+
+url = st.text_input('Enter a website URL:')
+if url:
+    url = preprocess_url(url)
+    features = tfidf.transform([url]).toarray()
+    prediction = ensemble.predict(features)[0]
+    if prediction == 1:
+        st.error('This website is potentially a phishing website.')
+    else:
+        st.success('This website is safe.')
+
