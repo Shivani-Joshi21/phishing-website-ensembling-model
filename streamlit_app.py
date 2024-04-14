@@ -19,10 +19,10 @@ def get_model():
     return phishing_url_detector
 
 st.title("Phishing Website Detector")
-st.header("Are you sure your 'bank' sent that link?")
+st.header("Are you sure you want to paste that link?")
 
 # Takes in user input
-input_url = st.text_area("Put in your sus site link here: ")
+input_url = st.text_area("Put in your site link here: ")
 
 if input_url != "":
     
@@ -32,7 +32,7 @@ if input_url != "":
     features_dataframe = features_dataframe.fillna(-1)
     features_dataframe = features_dataframe.astype(int)
 
-    st.write("Okay!")
+    st.write("okay")
     st.cache_data.clear()
     prediction_str = ""
 
