@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 
 # Load the trained model and vectorizer
-model_path = 'phishing_model.pkl'
+model_path = 'pkl_file.py'
 vectorizer_path = 'vectorizer.pkl'
 
 with open(model_path, 'rb') as file:
