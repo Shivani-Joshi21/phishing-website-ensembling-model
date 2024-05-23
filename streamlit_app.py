@@ -1,60 +1,49 @@
 import streamlit as st
 import pickle
 import pandas as pd
-from extract_features import ExtractFeatures
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import CountVectorizer
 
-@st.cache_resource
-def get_model():
-    """
-    Loads the phishing URL detection model from a pickle file.
-    This function reads and loads a pickled file containing the classifier.
-    Returns:
-        object: The loaded phishing URL detection model.
-    Note:
-        The model should be saved in a file named 'phishing_url_detector.pkl'.
-        XGBoost module must be installed before using the file.
-    """
-    with open('phishing_url_detector.pkl', 'rb') as pickle_model:
-        phishing_url_detector = pickle.load(pickle_model)
-    return phishing_url_detector
+# Load the trained model and vectorizer
+model_path = 'phishing_model.pkl'
+vectorizer_path = 'vectorizer.pkl'
 
-st.title("Phishing Website Detector")
-st.header("Are you sure you want to paste that link?")
+with open(model_path, 'rb') as file:
+    model = pickle.load(file)
 
-# Takes in user input
-input_url = st.text_area("Put in your site link here: ")
+with open(vectorizer_path, 'rb') as file:
+    vectorizer = pickle.load(file)
 
-if input_url != "":
-    
-    # Extracts features from the URL and converts it into a dataframe
-    features_url = ExtractFeatures().url_to_features(url=input_url)
-    features_dataframe = pd.DataFrame.from_dict([features_url])
-    features_dataframe = features_dataframe.fillna(-1)
-    features_dataframe = features_dataframe.astype(int)
+def extract_features(url):
+    # Example feature extraction (customize based on your actual feature extraction)
+    data = pd.DataFrame([url], columns=['url'])
+    features = vectorizer.transform(data['url'])
+    return features
 
-    st.write("okay")
-    st.cache_data.clear()
-    prediction_str = ""
+def main():
+    st.title("Phishing URL Detection")
+    st.write("Enter a URL to check if it is phishing or not.")
 
-    # Predict outcome using extracted features
-    try: 
-        phishing_url_detector = get_model()
-        prediction = phishing_url_detector.predict(features_dataframe)
-        if prediction == int(True):
-            prediction_str = 'Phishing Website. Do not click!'
-        elif prediction == int(False):
-            prediction_str = 'Not Phishing Website, stay safe!'
+    url_input = st.text_input("URL")
+
+    if st.button("Detect"):
+        if url_input:
+            features = extract_features(url_input)
+            prediction = model.predict(features)
+            prediction_proba = model.predict_proba(features)
+
+            if prediction[0] == 1:
+                st.error("The URL is likely a phishing URL.")
+            else:
+                st.success("The URL is likely safe.")
+
+            st.write("Prediction Probability: ", prediction_proba)
         else:
-            prediction_str = ''
-        st.write(prediction_str)
-        st.write(features_dataframe)
+            st.warning("Please enter a URL.")
 
-    except Exception as e:
-        print(e)
-        st.error("Not sure, what went wrong. We'll get back to you shortly!")
+if __name__ == "__main__":
+    main()
 
-else:
-    st.write("")
 
 
 
